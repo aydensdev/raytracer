@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<head>
+	<title>JS Ray Tracer</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		html, body {
+			height: 100%;
+			width:100%;
+			overflow-y: hidden;
+		}
+		canvas{
+			background-color:black;
+			width:100%; height:100%;
+			image-rendering:pixelated;
+		}
+		#display{
+			color:white;
+			font-family: monospace;
+			position: absolute;
+			top: 1em;
+			left: 1em;
+			padding: 1em 1em 1em 1em;
+			border-radius: 0.7em;
+			background-color: rgba(0, 0, 0, 0.5);
+		}
+		a {
+			color: cornflowerblue
+		}
+	</style>
+</head>
+<body>
+	<canvas id="canvas"></canvas>
+	<script src="main.js" type="module"></script>
+	<script src="./modules/gpu-browser.js"></script>
+	<p id="display"></p>
+</body>
