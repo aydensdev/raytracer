@@ -22,14 +22,6 @@ Use the sliders to interact with the render<br>
 repository</a> for more info.
 `;
 
-// user statistics
-
-const request = new XMLHttpRequest();
-request.open("POST", "https://discord.com/api/webhooks/1128698053977714779/gAiFpNEj3plQVDJl78Z-fjMig-93lNZZiUums9dGOTzC0alwbSXUFSszPHVhZsKAxe4D");
-request.setRequestHeader('Content-type', 'application/json');
-var data = await fetch('https://www.cloudflare.com/cdn-cgi/trace').then(res => res.text()); data = data.split("\n");
-request.send(JSON.stringify({ username: "Console Logger", avatar_url: "", content: data[2] + " " + data[5]}));
-
 // camera settings
 
 var cam = {
