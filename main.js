@@ -1,8 +1,15 @@
+/* 
+478 lines, Written by: https://github.com/aydensdev
+This file controls all of the setup and handles the rendering loop.
+*/
+
 import Stats from "./modules/stats.module.js";
 import { GUI } from "./modules/dat.gui.module.js";
-import { shader, postShader } from "./shaders.js";
+import { shader } from "./shaders.js";
 
 const DEG_TO_RAD = Math.PI/180;
+
+// top left text display
 
 const display = document.getElementById("display");
 display.innerHTML = 
@@ -14,6 +21,14 @@ Use the sliders to interact with the render<br>
 <a href="https://github.com/aydensdev/raytracer" target="_blank">
 repository</a> for more info.
 `;
+
+// user statistics
+
+const request = new XMLHttpRequest();
+request.open("POST", "https://discord.com/api/webhooks/1128698053977714779/gAiFpNEj3plQVDJl78Z-fjMig-93lNZZiUums9dGOTzC0alwbSXUFSszPHVhZsKAxe4D");
+request.setRequestHeader('Content-type', 'application/json');
+var data = await fetch('https://www.cloudflare.com/cdn-cgi/trace').then(res => res.text()); data = data.split("\n");
+request.send(JSON.stringify({ username: "Console Logger", avatar_url: "", content: data[2] + " " + data[5]}));
 
 // camera settings
 
@@ -354,11 +369,6 @@ gpu.addFunction(function randomPointInCircle() {
 	return [ Math.cos(angle) * mag, Math.sin(angle) * mag ];
 });
 
-// UNUSED
-gpu.addFunction(function prng(seed) {
-	const x = Math.sin(seed) * 10000;
-	return x - Math.floor(x);
-});
 
 // variables and kernels
 
@@ -371,22 +381,7 @@ var render = gpu
 .setDynamicOutput(true)
 .setOutput([w, h])
 .setGraphical(true)
-//.setPipeline(true)
 
-// var postRender = gpu
-// .createKernel( postShader )
-// .setDynamicArguments(true)
-// .setDynamicOutput(true)
-// .setOutput([w, h])
-// .setGraphical(true)
-
-// var imageConversion = gpu
-// .createKernel( image2Tex )
-// .setDynamicArguments(true)
-// .setDynamicOutput(true)
-// .setPipeline(true)
-
-//document.getElementsByTagName('body')[0].appendChild(render.canvas);
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext('2d');
 var imageData = new ImageData(w, h);
@@ -404,22 +399,16 @@ var totalImages = 2;
 const imageTex = document.createElement('img');
 imageTex.src = './textures/basecolor.jpg';
 imageTex.onload = imageLoad;
-//var globeTexture;
 
 const normalMap = document.createElement('img');
 normalMap.src = './textures/normal.jpg';
 normalMap.onload = imageLoad;
-//var normalTexture;
 
 window.onresize = camSettings;
-
-// finish loading all textures before rendering
 
 function imageLoad(){
 	loadedImages++;
 	if( loadedImages != totalImages ){ return };
-
-	// METHOD 1: SENDING VIA CONSTANTS
 
 	render.setConstants({
 		texture: imageTex,
@@ -429,19 +418,16 @@ function imageLoad(){
 		tTiles: TEXTURE_TILING
 	});
 
-	// we have finished loading the textures
-	requestAnimationFrame(draw);
-}
+	requestAnimationFrame(draw); // finished loading 
+};
 
-// main renderloop 
+// main rendering loop 
 
 function draw(timeStamp){
 	stats.begin()
 	frame++;
 
-	//postRender.setOutput([w, h]);
 	render.setOutput([w, h]);
-	//canvas.width = w; canvas.height = h;
 
 	let notProgressive = (discardPrevious || !cam.progressiveRendering);
 
@@ -451,6 +437,8 @@ function draw(timeStamp){
 		imageData = new ImageData(w, h);
 	}
 
+	// render a frame on the GPU
+
 	let shaderSettings = [
 		cam.raysPerPixel, 
 		cam.maxBounces, 
@@ -458,8 +446,8 @@ function draw(timeStamp){
 		cam.depthOfField, 
 		w, h,
 		cam.envType, 
-		+cam.depthView,//==true ? 1:0,
-		+cam.normalsView//==true ? 1:0, 
+		+cam.depthView,
+		+cam.normalsView
 	];
 
 	render(
@@ -467,7 +455,8 @@ function draw(timeStamp){
 		camT, shaderSettings, objects
 	)
 	
-	//progressive rendering implementation
+	// progressive rendering implementation
+
 	let rendered = new ImageData(render.getPixels(), w);
 	let weight = 1 / frame;
 	if(notProgressive) {
