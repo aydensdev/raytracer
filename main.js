@@ -1,5 +1,5 @@
 /* 
-478 lines, Written by: https://github.com/aydensdev
+479 lines, Written by: https://github.com/aydensdev
 This file controls all of the setup and handles the rendering loop.
 */
 
@@ -259,8 +259,9 @@ gui.add({fs:()=>{document.body.requestFullscreen()}}, "fs").name("Click To Open 
 
 // gpu.js is imported in the html file
 
-const gpu = new GPU.GPU({ mode: "gpu" });
-if ( GPU.GPU.isGPUSupported ) { console.log( "Loaded GPU.js, support detected!" ) };
+if ( GPU.isGPUSupported == undefined ) { GPU = GPU.GPU }; // we want GPU.JS, not webGPU
+const gpu = new GPU({ mode: "gpu" });
+if ( !GPU.isGPUSupported ) { alert("Unfortunately, your device is not supported.") };
 
 // vector functions we require
 
