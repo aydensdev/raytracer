@@ -1,3 +1,8 @@
+/* 
+314 lines, Written by: https://github.com/aydensdev
+This file holds the shader functions used to render on the GPU
+*/
+
 function shader ( uv_to_plane, camT, settings, objects ){ //imageTex, normalTex, imageDimensions, normalDimensions, tileLen ) {
 	/* Math.random(); <= removing this comment breaks everything ?? 
 	I blame GPU.js for this but its tolerable for now*/
@@ -20,10 +25,6 @@ function shader ( uv_to_plane, camT, settings, objects ){ //imageTex, normalTex,
 	var w = dimensions[0], h = dimensions[1];
 	var x = this.thread.x, y = this.thread.y;
 	var u = x / w, v = y / h;
-
-	// [UNUSED] iterate the prng to get a very random seed
-	//var seed = prng(prng(((x+14)*(y+23)+frame)/(w+h))*(x+6534.597)-y) * (y+4);
-	
 	let matrix = [uv_to_plane[0], uv_to_plane[1], uv_to_plane[2]];
 
 	// generate a viewpoint
@@ -36,13 +37,6 @@ function shader ( uv_to_plane, camT, settings, objects ){ //imageTex, normalTex,
 	var tForward = multS([camT[6], camT[7], camT[8]], viewPointLocal[2]);
 	var viewPoint = add4(origin, tRight, tUp, tForward);
 
-	function smoothStep(lower, upper, t){
-		let x = (t-lower) / (upper-lower);
-		if ( x < 0 ) { x = 0 };
-		if ( x > 1 ) { x = 1 };
-		return x * x * (3 - 2*x); 
-	}
-
 	function lerpS3(vec1, vec2, t){
 		return [
 			vec1[0] + (vec2[0]-vec1[0]) * t,
@@ -51,8 +45,6 @@ function shader ( uv_to_plane, camT, settings, objects ){ //imageTex, normalTex,
 		]
 	}
 	
-	// mult() gives an error for some reason?? 
-	// only the internal function worked
 	function multiply(a, b) {
 		return [
 			a[0]*b[0], 
@@ -68,20 +60,13 @@ function shader ( uv_to_plane, camT, settings, objects ){ //imageTex, normalTex,
 	
 	for(var rayNum = 0; rayNum < MaxRays; rayNum++) {
 		
-		// generate a ray with some jitter
-
-		let aliasBlur = 0;//4e-3; // anti-aliasing
-		var jitter = randomPointInCircle();
-		var rightJitter = multS([camT[0], camT[1], camT[2]], jitter[0] * aliasBlur);
-		var upJitter = multS([camT[3], camT[4], camT[5]], jitter[1] * aliasBlur);
-		var jitteredViewPoint = add3(viewPoint, rightJitter, upJitter);
-
+		// generate a ray with some jitter on the origin
 		var defocusJitter = randomPointInCircle(); // lens focus blur
-		rightJitter = multS([camT[0], camT[1], camT[2]], defocusJitter[0] * focalBlur);
-		upJitter = multS([camT[3], camT[4], camT[5]], defocusJitter[1] * focalBlur);
+		var rightJitter = multS([camT[0], camT[1], camT[2]], defocusJitter[0] * focalBlur);
+		var upJitter = multS([camT[3], camT[4], camT[5]], defocusJitter[1] * focalBlur);
 
 		var origin = add3([camT[9], camT[10], camT[11]], rightJitter, upJitter);
-		var dir = normalVec(sub(jitteredViewPoint, origin));
+		var dir = normalVec(sub(viewPoint, origin));
 		var rayColor = [1, 1, 1];
 		var incomingLight = [0, 0, 0];
 
@@ -144,10 +129,6 @@ function shader ( uv_to_plane, camT, settings, objects ){ //imageTex, normalTex,
 							let tileLen = this.constants.tTiles;
 							let pixel = [0, 0, 0, 0], width = 0, height = 0;
 							let coordX = ((sphereU*tileLen) % 1), coordY = ((sphereV*tileLen) % 1);
-	
-							// sample the texture 
-							//width = imageDimensions[0], height = imageDimensions[1];
-							//pixel = imageTex[coordY*height][coordX*width];
 
 							width = this.constants.texSize[0], height = this.constants.texSize[1];
 							pixel = this.constants.texture[coordY*height][coordX*width];
@@ -280,25 +261,18 @@ function shader ( uv_to_plane, camT, settings, objects ){ //imageTex, normalTex,
 				let envColor = [0, 0, 0];
 
 				if (env_mode == 1) { 
+
 					let skyDown = [.5, .7, 1], skyUp = [.07, .36, .72];
 					envColor = lerpS3(skyDown, skyUp, dir[1]);
+
 				} else if (env_mode == 2 || env_mode == 3){
+
 					let SUN_FOCUS = 150, SUN_INT = 100;
 					let SUN_DIR = normalVec([-.2, .2, .7]);
 					let skyDown = [1, 1, 1], skyUp = [.07, .36, .72];
-
-					//let groundColor = [.35, .3, .35];
-					//let sky0 = multS([0.8, 0.9, 1], 1-t);
-					//let sky1 = multS([0.3, 0.5, 1], t);
-					//let skyDown = [0.8, 0.9, 1], skyUp = [0, 0.1, 0.6];
-					//let skyGradient = Math.pow(smoothStep(0, 0.4, dir[1]), 0.35);
-
 					let skyGradient = (dir[1]*1.2)+0.55;
 					let skyColor = lerpS3(skyDown, skyUp, skyGradient);
 					let sun = Math.pow(Math.max(0, dotVec(dir, SUN_DIR)), SUN_FOCUS) * SUN_INT;
-	
-					//let groundGradient = 1;//smoothStep(-0.01, 0, dir[1]);
-					//let blend = lerpS3(groundColor, skyColor, groundGradient);
 
 					if (env_mode == 3){
 						envColor = [sun, sun, sun]; // "space" mode
@@ -333,30 +307,8 @@ function shader ( uv_to_plane, camT, settings, objects ){ //imageTex, normalTex,
 		totalLight = add(totalLight, incomingLight);
 	}
 
-	totalLight = powS(divS(totalLight, MaxRays), 0.6); // gamma correction, if needed
-
-	//return [totalLight[0], totalLight[1], totalLight[2]];
+	totalLight = powS(divS(totalLight, MaxRays), 0.7); // gamma correction
 	this.color(totalLight[0], totalLight[1], totalLight[2], 1);
 }
 
-function postShader ( inputTex, w, h, frame ){
-	// the input texture only updates when a GUI update is called
-
-	// base variables
-	var x = this.thread.x, y = this.thread.y;
-	var u = x / w, v = y / h;
-
-	const pixel = inputTex[y][x];
-	const r = pixel[0], g = pixel[1], b = pixel[2];
-
-	this.color(r, g, b, 1);
-	//return [r, g, b];
-};
-
-function image2Tex ( image ) {
-	// runs slowly, so we only do it once and save the textures
-	const pixel = image[this.thread.y][this.thread.x];
-	return [pixel[0], pixel[1], pixel[2]];
-}
-
-export { shader, postShader };
+export { shader };
